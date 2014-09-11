@@ -30,25 +30,41 @@ class Entry:
     def __repr__(self):
         return self.format(0)
 
+from collections import OrderedDict
+
 class Group:
     def __init__(self, entries=[]):
-        self.entries = entries
+        self.entries = OrderedDict()
+        for e in entries:
+            self.entries[e.key] = e.val
+
+    def __getattr__(self, key):
+        val = self.entries[key]
+        if val is None:
+            raise Exception("key = '%s' not found" % key)
+        return val
+
+    def __setattr_(self, key, val):
+        self.entries[key] = val
 
     def format(self, indent, expand=True):
         s = ""
         s += "{\n"
-        for e in self.entries:
-            s += e.format(indent + 1)
+        for key in self.entries:
+            for i in range(indent + 1):
+                s += "\t"
+            s += key
+            s += " = "
+            val = self.entries[key]
+            if type(val) is Group:
+                s += val.format(indent + 1)
+            else:
+                s += str(val)
+                s += "\n"
         for i in range(indent):
             s += "\t"
         s += "}\n"
         return s
-
-    def get(self, key):
-        for e in self.entries:
-            if e.key == key:
-                return e.val
-        raise Exception("key = '%s' not found" % key)
 
     def __str__(self):
         return self.format(0)
@@ -92,6 +108,6 @@ if __name__ == "__main__":
     root = restruct(p.parse(text))
     for e in root:
         print(e)
-        print(e.val.get("max_skill"))
+        print(e.val.max_skill)
     for s in stars:
         print(s)
