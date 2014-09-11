@@ -27,7 +27,7 @@ class Parser:
 
     def p_script_rules(self, p):
         '''script : rules'''
-        p[0] = MultiRules(p[1])
+        p[0] = p[1]
 
     def p_rules_rule(self, p):
         '''rules : rules rule
@@ -40,7 +40,9 @@ class Parser:
 
     def p_rule(self, p):
         '''rule : symbol ASSIGN value'''
-        p[0] = SingleRule(p[1], p[3])
+        p[0] = {}
+        p[0]['key'] = p[1]
+        p[0]['val'] = p[3]
 
     def p_symbol(self, p):
         '''symbol : SYMBOL'''
@@ -53,73 +55,13 @@ class Parser:
         if len(p) == 2:
             p[0] = p[1]
         else:
-            p[0] = MultiRules(p[2], brace=True)
+            p[0] = p[2]
 
     def __init__(self):
         self.lexer = lex.lex(module=self, reflags=re.UNICODE)
 
-    def settext(self, text):
+    def parse(self, text):
         self.lexer.input(text)
         self.linepos = 0
-
-    def token(self):
-        return self.lexer.token()
-
-    def parse(self, text):
-        self.settext(text)
         p = yacc.yacc(module=self)
         return p.parse(lexer=self.lexer)
-
-class SingleRule:
-    def __init__(self, key, val):
-        self.key = key
-        self.val = val
-
-    def format(self, indent):
-        s = ""
-        for i in range(indent):
-            s += "\t"
-        s += str(self.key)
-        s += " = "
-        if type(self.val) is MultiRules:
-            s += self.val.format(indent)
-        else:
-            s += str(self.val)
-            s += "\n"
-        return s
-
-    def __str__(self):
-        return self.format(0)
-
-    def __repr__(self):
-        return self.format(0)
-
-class MultiRules:
-    def __init__(self, rules=[], brace=False):
-        self.rules = rules
-        self.brace = brace
-
-    def format(self, indent):
-        s = ""
-        if self.brace:
-            s += "{\n"
-            for r in self.rules:
-                s += r.format(indent + 1)
-            for i in range(indent):
-                s += "\t"
-            s += "}\n"
-        else:
-            for r in self.rules:
-                s += r.format(indent)
-        return s
-
-    def __str__(self):
-        return self.format(0)
-
-    def __repr__(self):
-        return self.format(0)
-
-    def append(self, r):
-        if type(r) is not SingleRule:
-            raise Exception("invalid type append")
-        self.rules.append(r)
