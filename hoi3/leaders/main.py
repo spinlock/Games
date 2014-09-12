@@ -6,108 +6,119 @@ def readfile(filename):
         input.close()
         return content.decode('gbk')
 
-class Entry:
+class Column(object):
     def __init__(self, key, val):
         self.key = key
         self.val = val
 
-    def format(self, indent):
+    def format(self, indent=0):
         s = ""
-        for i in range(indent):
-            s += "\t"
         s += str(self.key)
         s += " = "
-        if type(self.val) is Group:
+        if type(self.val) is Struct:
             s += self.val.format(indent)
         else:
             s += str(self.val)
-            s += "\n"
         return s
 
     def __str__(self):
-        return self.format(0)
+        return self.format()
 
     def __repr__(self):
-        return self.format(0)
+        return self.format()
 
-from collections import OrderedDict
+    @staticmethod
+    def decode(data):
+        if type(data) is not dict:
+            raise Exception("not a column")
+        key = data['key']
+        val = data['val']
+        if type(val) is list:
+            val = Struct.decode(val)
+        return Column(key, val)
 
-class Group:
-    def __init__(self, entries=[]):
-        self.entries = OrderedDict()
-        for e in entries:
-            self.entries[e.key] = e.val
+class Struct(object):
+    def __init__(self, columns=[]):
+        self.columns = columns
 
-    def __getattr__(self, key):
-        val = self.entries[key]
-        if val is None:
-            raise Exception("key = '%s' not found" % key)
-        return val
-
-    def __setattr_(self, key, val):
-        self.entries[key] = val
-
-    def format(self, indent, expand=True):
+    def format(self, indent=0):
         s = ""
         s += "{\n"
-        for key in self.entries:
+        for c in self.columns:
             for i in range(indent + 1):
                 s += "\t"
-            s += key
-            s += " = "
-            val = self.entries[key]
-            if type(val) is Group:
-                s += val.format(indent + 1)
-            else:
-                s += str(val)
-                s += "\n"
+            s += c.format(indent + 1)
+            s += "\n"
         for i in range(indent):
             s += "\t"
-        s += "}\n"
+        s += "}"
         return s
 
     def __str__(self):
-        return self.format(0)
+        return self.format()
 
     def __repr__(self):
-        return self.format(0)
+        return self.format()
 
-def restruct_entry(data):
-    if type(data) is not dict:
-        raise Exception("not a entry")
-    key = data['key']
-    val = data['val']
-    if type(val) is not list:
-        return Entry(key, val)
-    else:
-        return Entry(key, restruct_group(val))
+    def getcolumn(self, name):
+        sel = None
+        for c in self.columns:
+            if c.key == name:
+                if sel is not None:
+                    raise Exception("multi columns.key = %s" % name)
+                sel = c
+        return sel
 
-def restruct_group(data):
-    if type(data) is not list:
-        raise Exception("not a group")
-    ret = []
-    for e in data:
-        ret.append(restruct_entry(e))
-    return Group(ret)
+    @staticmethod
+    def decode(data):
+        if type(data) is not list:
+            raise Exception("not a struct")
+        ret = []
+        for c in data:
+            ret.append(Column.decode(c))
+        return Struct(ret)
 
 def restruct(data):
     if type(data) is not list:
         raise Exception("not a root")
     ret = []
-    for e in data:
-        ret.append(restruct_entry(e))
+    for c in data:
+        ret.append(restruct_column(c))
     return ret
 
 from parser import Parser
 
-stars = "✩ ✩ ✬ ✬ ✿ ✿ ❀ ❀ ✙"
+level1 = "♠ ♠ ✩ ✩ ✬ ✬ ✪ ✪ ✙ "
+level2 = "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ "
+
+def getLevelStar(l, i):
+    n = i * 2
+    if n >= 0 and n < len(l):
+        if l[n] != ' ':
+            return l[n]
+    raise Exception("out of range: level = '%s', len = %d, index = %d" % l, len(l), i)
+
+def getLevel1(i):
+    return getLevelStar(level1, i)
+
+def getLevel2(i):
+    return getLevelStar(level2, i)
 
 if __name__ == "__main__":
     text = readfile("data/CHI.txt")
-    p = Parser()
-    root = restruct(p.parse(text))
-    for e in root:
+    data = Parser().parse(text)
+    if type(data) is not list:
+        raise Exception("not a conf data")
+    conf = []
+    for s in data:
+        conf.append(Column.decode(s))
+
+    for e in conf:
+        level = e.val.getcolumn("max_skill")
+        cname = e.val.getcolumn("name")
+        s = cname.val[1:-1]
+        cname.val = '"' + cname.val[1:-1] + getLevel1(int(level.val)) + '"'
         print(e)
-        print(e.val.max_skill)
-    for s in stars:
-        print(s)
+
+    for i in range(0, 9):
+        print(getLevel1(i), getLevel2(i))
