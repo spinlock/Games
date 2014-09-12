@@ -88,21 +88,15 @@ def restruct(data):
 
 from parser import Parser
 
-level1 = "♠ ♠ ✩ ✩ ✬ ✬ ✪ ✪ ✙ "
-level2 = "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ "
+star1 = "♧ ♧ ✩ ✩ ✬ ✬ ✪ ✪ ✙ "
+star2 = "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ "
 
-def getLevelStar(l, i):
+def getStar(l, i):
     n = i * 2
     if n >= 0 and n < len(l):
         if l[n] != ' ':
             return l[n]
-    raise Exception("out of range: level = '%s', len = %d, index = %d" % l, len(l), i)
-
-def getLevel1(i):
-    return getLevelStar(level1, i)
-
-def getLevel2(i):
-    return getLevelStar(level2, i)
+    raise Exception("out of range: star = '%s', len = %d, index = %d" % l, len(l), i)
 
 if __name__ == "__main__":
     text = readfile("data/CHI.txt")
@@ -117,8 +111,8 @@ if __name__ == "__main__":
         level = e.val.getcolumn("max_skill")
         cname = e.val.getcolumn("name")
         s = cname.val[1:-1]
-        cname.val = '"' + cname.val[1:-1] + getLevel1(int(level.val)) + '"'
+        cname.val = '"' + cname.val[1:-1] + getStar(star1, int(level.val)) + '"'
         print(e)
 
     for i in range(0, 9):
-        print(getLevel1(i), getLevel2(i))
+        print(getStar(star1, i), getStar(star2, i))
