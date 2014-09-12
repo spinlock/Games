@@ -1,22 +1,16 @@
-# -*- coding: <encoding name> -*-
-
-def readfile(filename):
-    with open(filename, 'rb') as input:
-        content = input.read()
-        input.close()
-        return content.decode('gbk')
+# -*- coding: utf-8 -*-
 
 class Column(object):
     def __init__(self, key, val):
         self.key = key
         self.val = val
 
-    def format(self, indent=0):
+    def format(self, indent=0, end="\n"):
         s = ""
         s += str(self.key)
         s += " = "
         if type(self.val) is Struct:
-            s += self.val.format(indent)
+            s += self.val.format(indent, end)
         else:
             s += str(self.val)
         return s
@@ -41,14 +35,15 @@ class Struct(object):
     def __init__(self, columns=[]):
         self.columns = columns
 
-    def format(self, indent=0):
+    def format(self, indent=0, end="\n"):
         s = ""
-        s += "{\n"
+        s += "{"
+        s += end
         for c in self.columns:
             for i in range(indent + 1):
                 s += "\t"
-            s += c.format(indent + 1)
-            s += "\n"
+            s += c.format(indent + 1, end)
+            s += end
         for i in range(indent):
             s += "\t"
         s += "}"
@@ -87,32 +82,58 @@ def restruct(data):
     return ret
 
 from parser import Parser
+import os
 
-star1 = "♧ ♧ ✩ ✩ ✬ ✬ ✪ ✪ ✙ "
-star2 = "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ "
+star1 = "☒ ☒ ✩ ✩ ✬ ✬ ✪ ✪ ✙ ✙ "
+star2 = "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ "
 
-def getStar(l, i):
+def level2star(i, text=star2):
     n = (i - 1) * 2
-    if n >= 0 and n < len(l):
-        if l[n] != ' ':
-            return l[n]
-    raise Exception("out of range: star = '%s', len = %d, index = %d" % (l, len(l), i))
+    if n >= 0 and n < len(text):
+        s = text[n]
+        if s != ' ':
+            return s
+    raise Exception("out of range: star = '%s', len = %d, index = %d" % (text, len(text), i))
 
-if __name__ == "__main__":
-    text = readfile("data/GER.txt")
+def load(filename):
+    with open(filename, 'rb') as input:
+        text = input.read()
+        text = text.decode('gbk')
+        input.close()
     data = Parser().parse(text)
     if type(data) is not list:
         raise Exception("not a conf data")
     conf = []
     for s in data:
         conf.append(Column.decode(s))
+    return conf
 
-    for e in conf:
-        level = e.val.getcolumn("max_skill")
-        cname = e.val.getcolumn("name")
-        s = cname.val[1:-1]
-        cname.val = "\"{1:s}{0:s}\"".format(cname.val[1:-1], getStar(star1, int(level.val)))
-        print(e)
+def store(filename, conf):
+    d = os.path.dirname(filename)
+    if not os.path.isdir(d):
+        os.makedirs(d)
+    text = ""
+    for c in conf:
+        text += c.format(end="\r\n")
+        text += "\r\n"
+    f = open(filename, 'wb+')
+    f.write(text.encode('gbk'))
+    f.close()
 
-    for i in range(1, 9):
-        print(getStar(star1, i), getStar(star2, i))
+if __name__ == "__main__":
+    for path, dirs, files in os.walk("data/"):
+        for f in files:
+            src = os.path.join(path, f)
+            dst = os.path.join("output", src)
+            print("%s -> %s" % (src, dst))
+            conf = load(src)
+            for e in conf:
+                level = e.val.getcolumn("max_skill")
+                cname = e.val.getcolumn("name")
+                s = cname.val[1:-1]
+                cname.val = "\"{1:s}{0:s}\"".format(cname.val[1:-1], level2star(int(level.val)))
+            store(dst, conf)
+            
+    for i in range(1, 10):
+        print(level2star(i, star1), level2star(i, star2))
+
