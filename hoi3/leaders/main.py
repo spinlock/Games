@@ -92,14 +92,14 @@ star1 = "♧ ♧ ✩ ✩ ✬ ✬ ✪ ✪ ✙ "
 star2 = "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ "
 
 def getStar(l, i):
-    n = i * 2
+    n = (i - 1) * 2
     if n >= 0 and n < len(l):
         if l[n] != ' ':
             return l[n]
-    raise Exception("out of range: star = '%s', len = %d, index = %d" % l, len(l), i)
+    raise Exception("out of range: star = '%s', len = %d, index = %d" % (l, len(l), i))
 
 if __name__ == "__main__":
-    text = readfile("data/CHI.txt")
+    text = readfile("data/GER.txt")
     data = Parser().parse(text)
     if type(data) is not list:
         raise Exception("not a conf data")
@@ -111,8 +111,8 @@ if __name__ == "__main__":
         level = e.val.getcolumn("max_skill")
         cname = e.val.getcolumn("name")
         s = cname.val[1:-1]
-        cname.val = '"' + cname.val[1:-1] + getStar(star1, int(level.val)) + '"'
+        cname.val = "\"{1:s}{0:s}\"".format(cname.val[1:-1], getStar(star1, int(level.val)))
         print(e)
 
-    for i in range(0, 9):
+    for i in range(1, 9):
         print(getStar(star1, i), getStar(star2, i))
