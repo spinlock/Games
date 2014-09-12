@@ -19,6 +19,9 @@ class Parser:
         t.lexer.lineno += len(t.value)
         self.linepos = t.lexpos
 
+    def t_comment(self, t):
+        r'\#[^\\\n]*'
+
     def t_error(self, t):
         raise Exception("illegal character '%s'=%02XH: line = %d, column = %d" % (t.value[0], ord(t.value[0]), t.lineno, t.lexpos - self.linepos))
 
